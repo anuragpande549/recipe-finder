@@ -1,185 +1,390 @@
 import React, { useState, useEffect } from "react";
+import { 
+  Search, 
+  ChefHat, 
+  Heart, 
+  X, 
+  Clock, 
+  MapPin, 
+  Utensils, 
+  ArrowRight,
+  Shuffle,
+  Loader2
+} from "lucide-react";
+
+// --- Components ---
+
+const LoadingSkeleton = () => (
+  <div className="animate-pulse">
+    <div className="bg-gray-300 h-48 w-full rounded-xl mb-4"></div>
+    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+    <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+  </div>
+);
+
+const RecipeModal = ({ recipe, onClose, toggleFavorite, isFavorite }) => {
+  if (!recipe) return null;
+
+  // Helper to extract ingredients
+  const getIngredients = () => {
+    let ingredients = [];
+    for (let i = 1; i <= 20; i++) {
+      if (recipe[`strIngredient${i}`]) {
+        ingredients.push({
+          item: recipe[`strIngredient${i}`],
+          measure: recipe[`strMeasure${i}`],
+        });
+      }
+    }
+    return ingredients;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col md:flex-row">
+        
+        {/* Close Button Mobile */}
+        <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 z-10 bg-white/80 p-2 rounded-full md:hidden"
+        >
+          <X size={24} />
+        </button>
+
+        {/* Image Section */}
+        <div className="w-full md:w-1/2 h-64 md:h-auto relative">
+          <img
+            src={recipe.strMealThumb}
+            alt={recipe.strMeal}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 md:hidden">
+            <h2 className="text-white text-3xl font-bold">{recipe.strMeal}</h2>
+          </div>
+        </div>
+
+        {/* Content Section */}
+        <div className="w-full md:w-1/2 p-8 flex flex-col bg-white">
+          <div className="flex justify-between items-start mb-6">
+            <h2 className="hidden md:block text-3xl font-bold text-gray-800">{recipe.strMeal}</h2>
+            <div className="flex gap-2">
+               <button 
+                onClick={() => toggleFavorite(recipe)}
+                className={`p-2 rounded-full border transition-colors ${isFavorite ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:text-red-500'}`}
+              >
+                <Heart size={24} fill={isFavorite ? "currentColor" : "none"} />
+              </button>
+              <button onClick={onClose} className="hidden md:block p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Meta Tags */}
+          <div className="flex flex-wrap gap-3 mb-6">
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <Utensils size={14} /> {recipe.strCategory}
+            </span>
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
+              <MapPin size={14} /> {recipe.strArea}
+            </span>
+          </div>
+
+          {/* Tabs/Sections */}
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                Ingredients <span className="text-sm font-normal text-gray-500">({getIngredients().length} items)</span>
+              </h3>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {getIngredients().map((ing, i) => (
+                  <li key={i} className="flex items-center gap-2 text-gray-700 text-sm p-2 bg-gray-50 rounded-lg">
+                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                    <span className="font-semibold">{ing.measure}</span> {ing.item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">Instructions</h3>
+              <div className="text-gray-600 text-sm leading-relaxed max-h-60 overflow-y-auto pr-2 scrollbar-thin">
+                {recipe.strInstructions.split('\r\n').map((step, idx) => (
+                  step.trim() && <p key={idx} className="mb-3">{step}</p>
+                ))}
+              </div>
+            </div>
+
+            {recipe.strYoutube && (
+              <a
+                href={recipe.strYoutube}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full mt-auto bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-transform active:scale-95"
+              >
+                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                  <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-red-600 border-b-[4px] border-b-transparent ml-0.5"></div>
+                </div>
+                Watch Video Tutorial
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
 
 const App = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [recipes, setRecipes] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [areas, setAreas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem("recipeFavorites");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [view, setView] = useState("home"); // 'home' or 'favorites'
 
-  // Fetch categories and areas on load
+  // Initial Data Fetch
   useEffect(() => {
-    const fetchFilters = async () => {
-      const categoriesResponse = await fetch(
-        "https://www.themealdb.com/api/json/v1/1/categories.php"
-      );
-      const areasResponse = await fetch(
-        "https://www.themealdb.com/api/json/v1/1/list.php?a=list"
-      );
-
-      const categoriesData = await categoriesResponse.json();
-      const areasData = await areasResponse.json();
-
-      setCategories(categoriesData.categories);
-      setAreas(areasData.meals);
+    const fetchData = async () => {
+      try {
+        const catRes = await fetch("https://www.themealdb.com/api/json/v1/1/categories.php");
+        const catData = await catRes.json();
+        setCategories([{ strCategory: "All" }, ...catData.categories]);
+        
+        // Initial random fetch to populate the page
+        fetchRecipes(""); 
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
     };
-
-    fetchFilters();
+    fetchData();
   }, []);
 
-  // Fetch recipes based on search, category, or area
-  const fetchRecipes = async () => {
-    let url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${searchTerm}`;
-    if (selectedCategory) {
-      url = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${selectedCategory}`;
-    } else if (selectedArea) {
-      url = `https://www.themealdb.com/api/json/v1/1/filter.php?a=${selectedArea}`;
+  // Persist Favorites
+  useEffect(() => {
+    localStorage.setItem("recipeFavorites", JSON.stringify(favorites));
+  }, [favorites]);
+
+  const fetchRecipes = async (query = "") => {
+    setLoading(true);
+    setView("home");
+    try {
+      let url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`;
+      if (selectedCategory !== "All" && !query) {
+        url = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${selectedCategory}`;
+      }
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      setRecipes(data.meals || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-
-    const response = await fetch(url);
-    const data = await response.json();
-    setRecipes(data.meals || []);
   };
 
-  // Fetch detailed recipe info
+  const fetchRandomRecipe = async () => {
+    setLoading(true);
+    setView("home");
+    try {
+      const response = await fetch("https://www.themealdb.com/api/json/v1/1/random.php");
+      const data = await response.json();
+      // Directly open the random recipe
+      setSelectedRecipe(data.meals[0]); 
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchRecipeDetails = async (id) => {
-    const response = await fetch(
-      `https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`
-    );
-    const data = await response.json();
-    setSelectedRecipe(data.meals[0]);
+    try {
+      const response = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`);
+      const data = await response.json();
+      setSelectedRecipe(data.meals[0]);
+    } catch (error) {
+      console.error(error);
+    }
   };
+
+  const toggleFavorite = (recipe) => {
+    const isFav = favorites.some((fav) => fav.idMeal === recipe.idMeal);
+    if (isFav) {
+      setFavorites(favorites.filter((fav) => fav.idMeal !== recipe.idMeal));
+    } else {
+      setFavorites([...favorites, recipe]);
+    }
+  };
+
+  // Handle Enter key in search
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') fetchRecipes(searchTerm);
+  };
+
+  // Effect to refetch when category changes (but not on initial load to prevent double fetch)
+  useEffect(() => {
+    if (selectedCategory !== "All") {
+      setSearchTerm("");
+      fetchRecipes("");
+    }
+  }, [selectedCategory]);
 
   return (
-
-    <div className="min-h-screen max-w-[60rem] border shadow-lg shadow-green-400  border-black m-auto bg-gray-50 flex">
-      {/* Left Section: Recipe List */}
-      <div className="w-1/3  p-4 border-r overflow-y-scroll  snap-both h-[100vh] bg-slate-200 border-gray-300">
-        <header className="bg-green-500 rounded-lg text-white py-4">
-          <h1 className="text-center text-xl p-1 font-bold">Recipe Hunter</h1>
-        </header>
-
-        {/* Search Bar */}
-        <div className="flex gap-4 flex-col mt-5 snap-x mb-4 ">
-          <input
-            type="text"
-            placeholder="Search for a recipe..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1  px-4 py-2 border rounded-md focus:outline-none"
-          />
-          <button
-            onClick={fetchRecipes}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-orange-700"
-          >
-            Search
-          </button>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-col gap-4 mb-4">
-          <select
-            className="flex-1 px-4 py-2 border rounded-md"
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setSelectedArea("");
-              fetchRecipes();
-            }}
-          >
-            <option value="">Filter by Category</option>
-            {categories.map((category) => (
-              <option key={category.idCategory} value={(category.strCategory == ("Beef" && "beef")) ? "" : ""}>
-                {category.strCategory === "Beef" ? null : category.strCategory}
-              </option>
-            ))}
-          </select>
-
-          <select
-            className="flex-1 px-4 py-2 border rounded-md"
-            onChange={(e) => {
-              setSelectedArea(e.target.value);
-              setSelectedCategory("");
-              fetchRecipes();
-            }}
-          >
-            <option value="">Filter by Area</option>
-            {areas.map((area) => (
-              <option key={area.strArea} value={area.strArea}>
-                {area.strArea}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Recipe List */}
-        <div className="space-y-4">
-          {recipes.map((recipe) => (
-            <div
-              key={recipe.idMeal}
-              className="bg-white shadow-md  rounded-md overflow-hidden cursor-pointer hover:shadow-lg"
-              onClick={() => fetchRecipeDetails(recipe.idMeal)}
-            >
-              <img
-                src={recipe.strMealThumb}
-                alt={recipe.strMeal}
-                className="w-full h-40 object-cover"
-              />
-              <h3 className="text-lg font-semibold p-4">{recipe.strMeal}</h3>
+    <div className="min-h-screen bg-orange-50/50 font-sans text-gray-800">
+      
+      {/* Header / Navbar */}
+      <nav className="bg-white sticky top-0 z-30 border-b border-orange-100 px-4 py-4 shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setView("home"); fetchRecipes("");}}>
+            <div className="bg-orange-500 p-2 rounded-lg">
+              <ChefHat className="text-white" size={24} />
             </div>
-          ))}
-        </div>
-      </div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              Crave<span className="text-orange-500">Craft</span>
+            </h1>
+          </div>
 
-      {/* Right Section: Recipe Details */}
-      {selectedRecipe ? (
-        <div className="w-2/3 p-4 bg-slate-200 overflow-y-scroll border border-black h-[100vh]">
-          <div className=" b rounded-md shadow-md p-6">
-            <button
-              className="text-xl bg-red-600 p-3 rounded-full text-white text-gray-500 float-right"
-              onClick={() => setSelectedRecipe(null)}
-            >
-              &times;
-            </button>
-            <h2 className="text-2xl font-bold mb-4">{selectedRecipe.strMeal}</h2>
-            <img
-              src={selectedRecipe.strMealThumb}
-              alt={selectedRecipe.strMeal}
-              className="w-[20rem] m-auto rounded-md mb-4"
+          {/* Search Bar */}
+          <div className="relative w-full md:w-96">
+            <input
+              type="text"
+              placeholder="Search recipes (e.g., Pasta, Beef)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all"
             />
-            <h3 className="text-lg font-semibold">Ingredients</h3>
-            <ul className="list-disc list-inside mb-4">
-              {Array.from({ length: 20 }, (_, i) =>
-                selectedRecipe[`strIngredient${i + 1}`] ? (
-                  <li key={i}>
-                    {selectedRecipe[`strIngredient${i + 1}`]} -{" "}
-                    {selectedRecipe[`strMeasure${i + 1}`]}
-                  </li>
-                ) : null
-              )}
-            </ul>
-            <h3 className="text-lg font-semibold">Instructions</h3>
-            <div>
-              {selectedRecipe.strInstructions.split('.').map((instruction, index) => (
-                <p key={index}>{instruction.trim()}</p>
-                
-              ))}
-              {selectedRecipe.strYoutube && (
-                <a
-                  href={selectedRecipe.strYoutube}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-white text-center mt-4 block bg-red-600 w-[80%] m-auto p-4 rounded-md"
-                >
-                  Watch Tutorial
-                </a>
-              )}
-            </div>
+            <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
+          </div>
 
+          <div className="flex gap-3">
+             <button
+              onClick={fetchRandomRecipe}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-medium hover:bg-purple-200 transition-colors"
+            >
+              <Shuffle size={18} />
+              <span className="hidden sm:inline">Surprise Me</span>
+            </button>
+            
+            <button
+              onClick={() => setView("favorites")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-colors ${view === 'favorites' ? 'bg-red-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+            >
+              <Heart size={18} fill={view === 'favorites' ? "currentColor" : "none"} />
+              <span className="hidden sm:inline">Saved</span>
+              <span className="bg-red-100 text-red-600 text-xs py-0.5 px-2 rounded-full ml-1">
+                {favorites.length}
+              </span>
+            </button>
           </div>
         </div>
-      ):<div className="w-2/3 p-4 border border-black  bg-slate-200 h-[100vh]"></div>}
+      </nav>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto p-4 md:p-8">
+        
+        {/* Category Filter Scroll */}
+        {view === "home" && (
+          <div className="mb-8 flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
+            {categories.map((cat) => (
+              <button
+                key={cat.strCategory}
+                onClick={() => setSelectedCategory(cat.strCategory)}
+                className={`whitespace-nowrap px-6 py-2 rounded-full font-medium transition-all ${
+                  selectedCategory === cat.strCategory
+                    ? "bg-orange-500 text-white shadow-lg shadow-orange-200"
+                    : "bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-500"
+                }`}
+              >
+                {cat.strCategory}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Results Heading */}
+        <div className="mb-6">
+           <h2 className="text-2xl font-bold text-gray-800">
+             {view === "favorites" 
+               ? "Your Cookbook" 
+               : searchTerm ? `Results for "${searchTerm}"` : `${selectedCategory} Recipes`}
+           </h2>
+        </div>
+
+        {/* Recipe Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => <LoadingSkeleton key={i} />)
+          ) : (view === "favorites" ? favorites : recipes).length > 0 ? (
+            (view === "favorites" ? favorites : recipes).map((recipe) => (
+              <div
+                key={recipe.idMeal}
+                onClick={() => fetchRecipeDetails(recipe.idMeal)}
+                className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+              >
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={recipe.strMealThumb}
+                    alt={recipe.strMeal}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute top-3 right-3 bg-white/90 p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ArrowRight size={18} className="text-orange-500" />
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-lg text-gray-900 line-clamp-1 mb-1">
+                    {recipe.strMeal}
+                  </h3>
+                  <div className="flex items-center justify-between mt-3">
+                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                       {recipe.strArea ? recipe.strArea : "Recipe"}
+                    </span>
+                    <span className="text-orange-500 text-sm font-medium flex items-center gap-1">
+                      View Recipe <ArrowRight size={14} />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-12 text-center">
+              <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Utensils className="text-orange-400" size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 mb-2">No recipes found</h3>
+              <p className="text-gray-500">Try adjusting your search or category filters.</p>
+              {view === "favorites" && (
+                <button 
+                  onClick={() => setView("home")}
+                  className="mt-4 text-orange-600 font-medium hover:underline"
+                >
+                  Go browse recipes
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </main>
+
+      {/* Details Modal */}
+      {selectedRecipe && (
+        <RecipeModal 
+          recipe={selectedRecipe} 
+          onClose={() => setSelectedRecipe(null)}
+          toggleFavorite={toggleFavorite}
+          isFavorite={favorites.some(f => f.idMeal === selectedRecipe.idMeal)}
+        />
+      )}
     </div>
   );
 };
