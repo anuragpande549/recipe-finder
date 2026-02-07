@@ -1,392 +1,104 @@
 import React, { useState, useEffect } from "react";
-import { 
-  Search, 
-  ChefHat, 
-  Heart, 
-  X, 
-  Clock, 
-  MapPin, 
-  Utensils, 
-  ArrowRight,
-  Shuffle,
-  Loader2
-} from "lucide-react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase"; // Your firebase config file
 
-// --- Components ---
+// --- Import the Components we created ---
+import Header from "./components/Header";
+import HeroSection from "./components/HeroSection";
+import MainSection from "./components/MainSection";
+import Footer from "./components/Footer";
+import AuthPage from "./pages/AuthPage";   // The Login/Signup Page
+import RecipeApp from "./RecipeApp";       // The Main Dashboard
 
-const LoadingSkeleton = () => (
-  <div className="animate-pulse">
-    <div className="bg-gray-300 h-48 w-full rounded-xl mb-4"></div>
-    <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-    <div className="h-4 bg-gray-300 rounded w-1/2"></div>
-  </div>
-);
-
-const RecipeModal = ({ recipe, onClose, toggleFavorite, isFavorite }) => {
-  if (!recipe) return null;
-
-  // Helper to extract ingredients
-  const getIngredients = () => {
-    let ingredients = [];
-    for (let i = 1; i <= 20; i++) {
-      if (recipe[`strIngredient${i}`]) {
-        ingredients.push({
-          item: recipe[`strIngredient${i}`],
-          measure: recipe[`strMeasure${i}`],
-        });
-      }
-    }
-    return ingredients;
-  };
-
+// --- 1. Mouse Spotlight Effect ---
+const MouseSpotlight = () => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    const handleMouseMove = (e) => setPosition({ x: e.clientX, y: e.clientY });
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col md:flex-row">
-        
-        {/* Close Button Mobile */}
-        <button 
-          onClick={onClose} 
-          className="absolute top-4 right-4 z-10 bg-white/80 p-2 rounded-full md:hidden"
-        >
-          <X size={24} />
-        </button>
+    <div
+      className="pointer-events-none fixed inset-0 z-0 transition-opacity duration-300 hidden md:block"
+      style={{
+        background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(249, 115, 22, 0.06), transparent 40%)`,
+      }}
+    />
+  );
+};
 
-        {/* Image Section */}
-        <div className="w-full md:w-1/2 h-64 md:h-auto relative">
-          <img
-            src={recipe.strMealThumb}
-            alt={recipe.strMeal}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6 md:hidden">
-            <h2 className="text-white text-3xl font-bold">{recipe.strMeal}</h2>
-          </div>
-        </div>
-
-        {/* Content Section */}
-        <div className="w-full md:w-1/2 p-8 flex flex-col bg-white">
-          <div className="flex justify-between items-start mb-6">
-            <h2 className="hidden md:block text-3xl font-bold text-gray-800">{recipe.strMeal}</h2>
-            <div className="flex gap-2">
-               <button 
-                onClick={() => toggleFavorite(recipe)}
-                className={`p-2 rounded-full border transition-colors ${isFavorite ? 'bg-red-50 border-red-200 text-red-500' : 'border-gray-200 text-gray-400 hover:text-red-500'}`}
-              >
-                <Heart size={24} fill={isFavorite ? "currentColor" : "none"} />
-              </button>
-              <button onClick={onClose} className="hidden md:block p-2 hover:bg-gray-100 rounded-full text-gray-500">
-                <X size={24} />
-              </button>
-            </div>
-          </div>
-
-          {/* Meta Tags */}
-          <div className="flex flex-wrap gap-3 mb-6">
-            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium flex items-center gap-1">
-              <Utensils size={14} /> {recipe.strCategory}
-            </span>
-            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">
-              <MapPin size={14} /> {recipe.strArea}
-            </span>
-          </div>
-
-          {/* Tabs/Sections */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                Ingredients <span className="text-sm font-normal text-gray-500">({getIngredients().length} items)</span>
-              </h3>
-              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {getIngredients().map((ing, i) => (
-                  <li key={i} className="flex items-center gap-2 text-gray-700 text-sm p-2 bg-gray-50 rounded-lg">
-                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                    <span className="font-semibold">{ing.measure}</span> {ing.item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-3">Instructions</h3>
-              <div className="text-gray-600 text-sm leading-relaxed max-h-60 overflow-y-auto pr-2 scrollbar-thin">
-                {recipe.strInstructions.split('\r\n').map((step, idx) => (
-                  step.trim() && <p key={idx} className="mb-3">{step}</p>
-                ))}
-              </div>
-            </div>
-
-            {recipe.strYoutube && (
-              <a
-                href={recipe.strYoutube}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full mt-auto bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2 transition-transform active:scale-95"
-              >
-                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                  <div className="w-0 h-0 border-t-[4px] border-t-transparent border-l-[8px] border-l-red-600 border-b-[4px] border-b-transparent ml-0.5"></div>
-                </div>
-                Watch Video Tutorial
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
+// --- 2. Layout for the Landing Page ---
+// This groups Header, Hero, Main, and Footer together for the home page ("/")
+const LandingLayout = () => {
+  return (
+    <div className="flex flex-col min-h-screen relative z-10">
+      <Header />
+      <main className="flex-grow">
+        <HeroSection />
+        <MainSection />
+      </main>
+      <Footer />
     </div>
   );
 };
 
-// --- Main App ---
+// --- 3. Protected Route Component ---
+// Checks if user is logged in. If not, redirects to /auth.
+const RequireAuth = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-const App = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [recipes, setRecipes] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [favorites, setFavorites] = useState(() => {
-    const saved = localStorage.getItem("recipeFavorites");
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [view, setView] = useState("home"); // 'home' or 'favorites'
-
-  // Initial Data Fetch
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const catRes = await fetch("https://www.themealdb.com/api/json/v1/1/categories.php");
-        const catData = await catRes.json();
-        setCategories([{ strCategory: "All" }, ...catData.categories]);
-        
-        // Initial random fetch to populate the page
-        fetchRecipes(""); 
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    };
-    fetchData();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  // Persist Favorites
-  useEffect(() => {
-    localStorage.setItem("recipeFavorites", JSON.stringify(favorites));
-  }, [favorites]);
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
-  const fetchRecipes = async (query = "") => {
-    setLoading(true);
-    setView("home");
-    try {
-      let url = `https://www.themealdb.com/api/json/v1/1/search.php?s=${query}`;
-      if (selectedCategory !== "All" && !query) {
-        url = `https://www.themealdb.com/api/json/v1/1/filter.php?c=${selectedCategory}`;
-      }
-      
-      const response = await fetch(url);
-      const data = await response.json();
-      setRecipes(data.meals || []);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  return children;
+};
 
-  const fetchRandomRecipe = async () => {
-    setLoading(true);
-    setView("home");
-    try {
-      const response = await fetch("https://www.themealdb.com/api/json/v1/1/random.php");
-      const data = await response.json();
-      // Directly open the random recipe
-      setSelectedRecipe(data.meals[0]); 
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchRecipeDetails = async (id) => {
-    try {
-      const response = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`);
-      const data = await response.json();
-      setSelectedRecipe(data.meals[0]);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const toggleFavorite = (recipe) => {
-    const isFav = favorites.some((fav) => fav.idMeal === recipe.idMeal);
-    if (isFav) {
-      setFavorites(favorites.filter((fav) => fav.idMeal !== recipe.idMeal));
-    } else {
-      setFavorites([...favorites, recipe]);
-    }
-  };
-
-  // Handle Enter key in search
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') fetchRecipes(searchTerm);
-  };
-
-  // Effect to refetch when category changes (but not on initial load to prevent double fetch)
-  useEffect(() => {
-    if (selectedCategory !== "All") {
-      setSearchTerm("");
-      fetchRecipes("");
-    }
-  }, [selectedCategory]);
-
+// --- 4. Main App Component ---
+const App = () => {
   return (
-    <div className="min-h-screen bg-orange-50/50 font-sans text-gray-800">
-      
-      {/* Header / Navbar */}
-      <nav className="bg-white sticky top-0 z-30 border-b border-orange-100 px-4 py-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {setView("home"); fetchRecipes("");}}>
-            <div className="bg-orange-500 p-2 rounded-lg">
-              <ChefHat className="text-white" size={24} />
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              Crave<span className="text-orange-500">Craft</span>
-            </h1>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative w-full md:w-96">
-            <input
-              type="text"
-              placeholder="Search recipes (e.g., Pasta, Beef)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="w-full pl-10 pr-4 py-3 bg-gray-100 border-none rounded-full focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all"
-            />
-            <Search className="absolute left-3 top-3.5 text-gray-400" size={20} />
-          </div>
-
-          <div className="flex gap-3">
-             <button
-              onClick={fetchRandomRecipe}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-medium hover:bg-purple-200 transition-colors"
-            >
-              <Shuffle size={18} />
-              <span className="hidden sm:inline">Surprise Me</span>
-            </button>
-            
-            <button
-              onClick={() => setView("favorites")}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-colors ${view === 'favorites' ? 'bg-red-500 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-            >
-              <Heart size={18} fill={view === 'favorites' ? "currentColor" : "none"} />
-              <span className="hidden sm:inline">Saved</span>
-              <span className="bg-red-100 text-red-600 text-xs py-0.5 px-2 rounded-full ml-1">
-                {favorites.length}
-              </span>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-4 md:p-8">
+    <Router>
+      <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-orange-100 selection:text-orange-600">
         
-        {/* Category Filter Scroll */}
-        {view === "home" && (
-          <div className="mb-8 flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-            {categories.map((cat) => (
-              <button
-                key={cat.strCategory}
-                onClick={() => setSelectedCategory(cat.strCategory)}
-                className={`whitespace-nowrap px-6 py-2 rounded-full font-medium transition-all ${
-                  selectedCategory === cat.strCategory
-                    ? "bg-orange-500 text-white shadow-lg shadow-orange-200"
-                    : "bg-white text-gray-600 border border-gray-200 hover:border-orange-300 hover:text-orange-500"
-                }`}
-              >
-                {cat.strCategory}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* The cool background effect */}
+        <MouseSpotlight />
 
-        {/* Results Heading */}
-        <div className="mb-6">
-           <h2 className="text-2xl font-bold text-gray-800">
-             {view === "favorites" 
-               ? "Your Cookbook" 
-               : searchTerm ? `Results for "${searchTerm}"` : `${selectedCategory} Recipes`}
-           </h2>
-        </div>
+        <Routes>
+          {/* Route 1: The Landing Page */}
+          <Route path="/" element={<LandingLayout />} />
 
-        {/* Recipe Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {loading ? (
-            Array.from({ length: 8 }).map((_, i) => <LoadingSkeleton key={i} />)
-          ) : (view === "favorites" ? favorites : recipes).length > 0 ? (
-            (view === "favorites" ? favorites : recipes).map((recipe) => (
-              <div
-                key={recipe.idMeal}
-                onClick={() => fetchRecipeDetails(recipe.idMeal)}
-                className="group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={recipe.strMealThumb}
-                    alt={recipe.strMeal}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 right-3 bg-white/90 p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ArrowRight size={18} className="text-orange-500" />
-                  </div>
-                </div>
-                <div className="p-5">
-                  <h3 className="font-bold text-lg text-gray-900 line-clamp-1 mb-1">
-                    {recipe.strMeal}
-                  </h3>
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                       {recipe.strArea ? recipe.strArea : "Recipe"}
-                    </span>
-                    <span className="text-orange-500 text-sm font-medium flex items-center gap-1">
-                      View Recipe <ArrowRight size={14} />
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="col-span-full py-12 text-center">
-              <div className="bg-orange-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Utensils className="text-orange-400" size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-2">No recipes found</h3>
-              <p className="text-gray-500">Try adjusting your search or category filters.</p>
-              {view === "favorites" && (
-                <button 
-                  onClick={() => setView("home")}
-                  className="mt-4 text-orange-600 font-medium hover:underline"
-                >
-                  Go browse recipes
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      </main>
+          {/* Route 2: Login / Signup */}
+          <Route path="/auth" element={<AuthPage />} />
 
-      {/* Details Modal */}
-      {selectedRecipe && (
-        <RecipeModal 
-          recipe={selectedRecipe} 
-          onClose={() => setSelectedRecipe(null)}
-          toggleFavorite={toggleFavorite}
-          isFavorite={favorites.some(f => f.idMeal === selectedRecipe.idMeal)}
-        />
-      )}
-    </div>
+          {/* Route 3: The Recipe Dashboard (Protected) */}
+          <Route 
+            path="/app" 
+            element={
+              <RequireAuth>
+                <RecipeApp />
+              </RequireAuth>
+            } 
+          />
+          
+          {/* Fallback: Redirect unknown URLs to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </Router>
   );
 };
 
-export default App;
+export default App
