@@ -1,112 +1,107 @@
-🍳 RecipeHunter
-RecipeHunter is a modern, responsive single-page application (SPA) that solves the "What should I cook?" dilemma. Built with React and Vite, it allows users to search thousands of recipes, filter by category or cuisine, and save their favorites to a personal cookbook.
+# 🍳 RecipeHunter
 
-The app features a premium UI with glassmorphism effects, a "mouse spotlight" interaction, and secure authentication via Firebase.
+RecipeHunter is a modern, responsive **single-page application (SPA)** that solves the everyday dilemma:  
+**“What should I cook today?”**
 
-✨ Key Features
-🔍 Smart Search: Instantly find recipes by name or ingredient.
+Built with **React + Vite**, the app allows users to search thousands of recipes, filter by cuisine or category, and save their favorites — all wrapped in a premium, interactive UI.
 
-🔐 Secure Authentication: User login and signup powered by Firebase Auth.
+---
 
-❤️ Favorites System: Save your best-loved meals to a personal list (persisted locally).
+## ✨ Features
 
-🎲 Surprise Me: Stuck on what to eat? Let the randomizer pick a meal for you.
+- 🔍 **Smart Search**  
+  Search recipes by name or ingredient instantly.
 
-🌍 Global Filtering: Browse recipes by Category (Vegan, Seafood, etc.) or Area (Italian, Japanese, etc.).
+- 🔐 **Secure Authentication**  
+  Login and signup powered by Firebase Authentication.
 
-📱 Fully Responsive: Optimized for desktops, tablets, and mobile phones.
+- ❤️ **Favorites System**  
+  Save your favorite meals to a personal list (locally persisted).
 
-⚡ Modern UI: Features skeleton loading states, modal overlays, and interactive cursor effects.
+- 🎲 **Surprise Me**  
+  Get a random recipe suggestion when you’re feeling indecisive.
 
-🛠️ Tech Stack
-Frontend: React.js + Vite
+- 🌍 **Global Filtering**  
+  Browse recipes by:
+  - Category (Vegan, Seafood, Dessert, etc.)
+  - Area / Cuisine (Italian, Japanese, Indian, etc.)
 
-Styling: Tailwind CSS
+- 📱 **Fully Responsive**  
+  Optimized for desktop, tablet, and mobile devices.
 
-Routing: React Router DOM (v6)
+- ⚡ **Modern UI & UX**
+  - Glassmorphism design
+  - Mouse spotlight interaction
+  - Skeleton loading states
+  - Modal recipe details
+  - Smooth animations
 
-Backend/Auth: Firebase (Authentication)
+---
 
-API: TheMealDB (Open API)
+## 🛠️ Tech Stack
 
-Icons: Lucide React
+- **Frontend:** React.js + Vite  
+- **Styling:** Tailwind CSS  
+- **Routing:** React Router DOM (v6)  
+- **Authentication:** Firebase Authentication  
+- **API:** TheMealDB (Open Recipe API)  
+- **Icons:** Lucide React  
 
-🚀 Getting Started
-Follow these steps to get the project running on your local machine.
+---
 
-Prerequisites
-Node.js (v14 or higher)
+## 🚀 Getting Started
 
-npm or yarn
+Follow the steps below to run the project locally.
 
-Installation
-Clone the repository
+### Prerequisites
 
-Bash
+- Node.js (v14 or higher)
+- npm or yarn
+
+---
+
+### Installation
+
+#### 1. Clone the repository
+```bash
 git clone https://github.com/yourusername/recipe-hunter.git
 cd recipe-hunter
-Install dependencies
 
-Bash
+
+2. Install dependencies
+
 npm install
-Configure Environment Variables Create a .env file in the root directory and add your Firebase configuration keys. (You can find these in your Firebase Console > Project Settings > General > Your Apps)
 
-Code snippet
+
+Environment Variables
+
+Create a .env file in the root directory and add your Firebase configuration:
+
 VITE_FIREBASE_API_KEY=your_api_key_here
 VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
-Run the development server
 
-Bash
+You can find these values in
+Firebase Console → Project Settings → General → Your Apps
+
+Run the Development Server
 npm run dev
-Open http://localhost:5173 in your browser.
+
 
 📂 Project Structure
-Plaintext
 src/
-├── components/       # Reusable UI components
-│   ├── Header.jsx    # Navigation bar
+├── components/        # Reusable UI components
+│   ├── Header.jsx
 │   ├── HeroSection.jsx
 │   ├── MainSection.jsx
 │   └── Footer.jsx
-├── pages/            # Page-level components
-│   └── AuthPage.jsx  # Login/Signup logic
-├── RecipeApp.jsx     # Main Dashboard Logic
-├── App.jsx           # Routing & Layouts
-├── firebase.js       # Firebase Configuration
-└── main.jsx          # Entry point
-📸 Screenshots
-1. Landing Page
-The landing page features a spotlight effect and clear calls to action.
+├── pages/
+│   └── AuthPage.jsx   # Login / Signup logic
+├── RecipeApp.jsx      # Main dashboard logic
+├── App.jsx            # Routing and layout
+├── firebase.js        # Firebase configuration
+└── main.jsx           # Entry point
 
-2. Recipe Dashboard
-Users can browse recipes in a responsive grid layout.
-
-3. Recipe Details (Modal)
-Clicking a recipe opens a detailed view with ingredients and instructions.
-
-🤝 Contributing
-Contributions are welcome! Here's how you can help:
-
-Fork the project.
-
-Create your feature branch (git checkout -b feature/AmazingFeature).
-
-Commit your changes (git commit -m 'Add some AmazingFeature').
-
-Push to the branch (git push origin feature/AmazingFeature).
-
-Open a Pull Request.
-
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-🙏 Acknowledgements
-Recipe data provided by TheMealDB.
-
-Icons provided by Lucide.
-
-Design inspiration from modern food apps.
